@@ -173,7 +173,284 @@ body, html {
   margin-bottom: -8px;
 }
 
-/* RESPONSIVE STYLING */
+/* ======= AUTH OVERLAY: Sign In / Sign Up ======= */
+.auth-overlay, .signupfrm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 11000;
+}
+
+.auth-card, .signupfrm-card {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 360px;
+  max-width: 90%;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  text-align: center;
+  position: relative;
+}
+
+.auth-logo, .signupfrm-logo {
+  width: 100px;
+  margin-bottom: 10px;
+}
+
+.auth-title, .signupfrm-title {
+  font-size: 20px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  color: #04366D;
+  margin-bottom: 20px;
+}
+
+.auth-input, .signupfrm-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.auth-password-container{
+  position: relative;
+}
+
+.signupfrm-password-group {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.signupfrm-password {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.auth-eye, .signupfrm-eye-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #7f7f7f;
+}
+
+.auth-forgot {
+  font-size: 12px;
+  color: #04366D;
+  text-align: right;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.auth-btn, .signupfrm-btn {
+  background-color: #04366D;
+  color: white;
+  font-weight: bold;
+  width: 50%;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.auth-link, .signupfrm-link {
+  font-size: 13px;
+  color: #333;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.auth-link span {
+  color: #04366D;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.google-btn {
+  background-color: #04366D;
+  color: white;
+  padding: 10px;
+  width: 100%;
+  margin-top: 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.google-icon {
+  width: 20px;
+  margin-right: 8px;
+}
+
+/* ======= POPUP MODALS: Forgot / OTP / Reset / Success ======= */
+.modal-overlay, .forgot-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(0,0,0,0.4);
+  width: 100vw;
+  height: 100vh;
+  z-index: 11000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-card, .forgot-modal {
+  background-color: white;
+  padding: 25px 20px;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+  z-index: 11001;
+  position: relative;
+}
+
+.modal-title, .forgot-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #04366D;
+  margin-bottom: 15px;
+}
+
+.modal-text, .forgot-info {
+  font-size: 13px;
+  color: #222;
+  margin-bottom: 15px;
+}
+
+.modal-success, .forgot-thankyou {
+  font-size: 18px;
+  font-weight: bold;
+  color: #04366D;
+  margin-bottom: 10px;
+}
+
+.modal-subtext, .forgot-success-title {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.modal-input, .forgot-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  outline: none;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.current-pwd{
+  margin-bottom: 7px !important;
+  margin-left: 2px !important;
+  font-weight: bold;
+  color: #04366D;
+  display: inline-block;
+}
+
+.modal-btn, .forgot-btn {
+  background-color: #04366D;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 50%;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.verify-btn {
+  background-color: #04366D;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 30%;
+  font-size: 14px;
+  margin-top: 30px;
+  margin-bottom: -20px;
+  position: relative;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 20px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.modal-close-btn:hover {
+  color: #04366D;
+}
+
+/* ===== Additional Feedback & Message Styling ===== */
+.otp-error-message {
+  color: red;
+  font-size: 12px;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.otp-sent-message {
+  color: #04366D;
+  font-size: 13px;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.otp-success-message {
+  color: green;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -5px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+/* Optional: Add a check icon (if not using react-icons) */
+.otp-check-icon {
+  color: green;
+  font-size: 16px;
+  margin-right: 5px;
+}
+
+/* ======= RESPONSIVE ======= */
 @media screen and (max-width: 768px) {
   .header {
     padding: 10px 20px;
@@ -181,8 +458,7 @@ body, html {
   }
 
   .header-left h1 {
-    color: black !important;
-    font-size: 16px; /* Reduce title size */
+    font-size: 16px;
   }
 
   .logo {
@@ -201,6 +477,15 @@ body, html {
 
   .profile-icon {
     width: 30px;
+  }
+
+  .auth-card,
+  .signupfrm-card {
+    width: 90%;
+  }
+
+  .modal-card {
+    width: 90%;
   }
 }
 
@@ -243,7 +528,6 @@ body, html {
   z-index: 10; /* Ensure sidebar is above content */
   overflow-x: hidden; /* Fix for hiding text but keeping icons visible */
 }
-
 
 /* Expanded Sidebar */
 .sidebar.open {
@@ -1398,179 +1682,142 @@ body, html {
   font-size: 13px;
 }
 
-/* sign in component */
-.auth-overlay {
+/* Unique Warning Popups */
+
+.warning-popup-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  background-color: rgba(0,0,0,0.4);
   width: 100vw;
   height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  backdrop-filter: blur(2px);
+  background-color: rgba(0, 0, 0, 0.4);
   z-index: 10000;
-}
-
-.auth-card {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 360px;
-  max-width: 90%;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
-  text-align: center;
-  position: relative;
-}
-
-.auth-logo {
-  width: 100px;
-  margin-bottom: 10px;
-}
-
-.auth-title {
-  font-family: 'Poppins-Bold';
-  font-size: 22px;
-  letter-spacing: 6px;
-  margin-bottom: 20px;
-}
-
-.auth-input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  font-size: 14px;
-  border-bottom: 1px solid #000;
-  border: none;
-  outline: none;
-}
-
-.auth-forgot {
-  font-size: 12px;
-  color: #555;
-  text-align: right;
-  margin-bottom: 20px;
-}
-
-.auth-btn {
-  width: 100%;
-  background-color: #04366D;
-  color: white;
-  padding: 10px;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-.auth-link {
-  font-size: 13px;
-}
-
-.google-btn {
   display: flex;
-  align-items: center;
   justify-content: center;
-  background-color: #04366D;
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
-  width: 100%;
+  align-items: center;
+}
+
+.warning-popup-box {
+  background-color: white;
+  border-radius: 10px;
+  padding: 20px; /* Reduced padding */
+  width: 300px; /* Reduced width */
+  max-width: 80%; /* Adjusted max-width */
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.warning-popup-icon {
+  width: 60px;
+  margin-bottom: 15px;
+}
+
+.warning-popup-title {
+  font-size: 18px;
   font-weight: bold;
+  color: #B00020;
+  margin-bottom: 10px;
 }
 
-.google-icon {
-  width: 20px;
-  margin-right: 8px;
+.warning-popup-msg {
+  font-size: 12px;
+  color: #333;
+  margin-bottom: 20px;
+  font-weight: 500;
 }
 
-/* sign up component */
-.signupfrm-overlay {
+.warning-popup-links {
+  display: flex;
+  justify-content: space-between; /* Align links and back button in a row */
+  align-items: center;
+}
+
+.warning-popup-links span {
+  display: inline-block;
+  margin: 10px; /* Remove extra margin */
+  padding: 0; /* Remove padding */
+  background-color: transparent; /* Remove background color */
+  color: blue; /* Set text color to blue */
+  text-decoration: underline; /* Add underline to mimic links */
+  cursor: pointer; /* Pointer cursor for clickable links */
+  font-size: 12px;
+  font-weight: normal; /* Adjust font weight */
+}
+
+.warning-popup-links span:hover {
+  color: darkblue; /* Change color on hover for better UX */
+  text-decoration: underline; /* Keep underline on hover */
+}
+
+.warning-popup-links .back-button {
+  margin-left: auto; /* Push the back button to the right */
+  text-align: right;
+}
+
+.m-warning-popup-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  background: rgba(0,0,0,0.5);
-  height: 100vh;
   width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(2px);
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 10000;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
 }
 
-.signupfrm-card {
-  background: white;
-  padding: 30px;
+.m-warning-popup-box {
+  background-color: white;
   border-radius: 10px;
-  width: 350px;
+  padding: 30px;
+  width: 400px;
   max-width: 90%;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-  position: relative;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
 }
 
-.signupfrm-logo {
+.m-warning-popup-icon {
   width: 80px;
-  margin: 0 auto 10px;
-  display: block;
+  height: 100px;
+  margin-bottom: 15px;
 }
 
-.signupfrm-title {
-  font-size: 20px;
+.m-warning-popup-title {
+  font-size: 18px;
   font-weight: bold;
-  text-align: center;
-  color: #04366D;
-  margin-bottom: 20px;
+  color: #B00020;
+  margin-bottom: 10px;
 }
 
-.signupfrm-input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 18px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.signupfrm-password-group {
-  position: relative;
-  margin-bottom: 18px;
-}
-
-.signupfrm-password {
-  width: 100%;
-  padding: 10px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.signupfrm-eye-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: #04366D;
-}
-
-.signupfrm-btn {
-  background-color: #04366D;
-  color: white;
-  font-weight: bold;
-  width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.signupfrm-link {
-  margin-top: 15px;
-  font-size: 13px;
+.m-warning-popup-msg {
+  font-size: 12px;
   color: #333;
-  text-align: center;
+  margin-bottom: 20px;
+  font-weight: 500;
 }
 
+.m-warning-popup-links {
+  display: flex;
+  flex-direction: column; /* Align items in a column */
+  align-items: flex-end; /* Align to the right-hand side */
+}
 
+.m-warning-popup-links span {
+  display: block; /* Ensure each link is on its own line */
+  margin: 6px 0; /* Add vertical spacing between links */
+  padding: 0; /* Remove padding */
+  background-color: transparent; /* Remove background color */
+  color: blue; /* Set text color to blue */
+  text-decoration: underline; /* Add underline to mimic links */
+  cursor: pointer; /* Pointer cursor for clickable links */
+  font-size: 12px;
+  font-weight: normal; /* Adjust font weight if needed */
+}
 
+.m-warning-popup-links span:hover {
+  color: darkblue; /* Change color on hover for better UX */
+  text-decoration: underline; /* Keep underline on hover */
+}

@@ -1,7 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import {useRef, useState } from 'react'; //useEffect removed because it was not used
 import { FaChevronDown, FaChevronUp, FaEdit } from 'react-icons/fa';
 import { Switch } from '@mui/material';
 import { useSettings } from '../context/SettingsContext';
+
+import ForgotPasswordModal from '../modals/ForgotPasswordModal';
+import OtpSentModal from '../modals/OtpSentModal';
+import ResetPasswordModal from '../modals/ResetPasswordModal';
+import SuccessModal from '../modals/SuccessModal';
+import DeletePasswordModal from '../modals/DeletePasswordModal';
 
 const SettingsPopup = () => {
   const { isOpen, position, setIsOpen } = useSettings();
@@ -11,6 +17,9 @@ const SettingsPopup = () => {
   const [showImagePopup, setShowImagePopup] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [otherReason, setOtherReason] = useState('');
+  const [modalStep, setModalStep] = useState('');
+  const [passwordAttempts, setPasswordAttempts] = useState(0);
+
   const imagePopupRef = useRef<HTMLDivElement | null>(null);
 
   const toggleSection = (section: string) => {
@@ -22,29 +31,48 @@ const SettingsPopup = () => {
     setShowImagePopup(true);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-        setShowImagePopup(false);
+  const handleDeleteAccount = () => {
+    setModalStep('deletePassword');
+    setPasswordAttempts(0);
+  };
+
+  const handlePasswordNext = (correct: boolean) => {
+    if (correct) {
+      setModalStep('thankyou');
+    } else {
+      const updatedAttempts = passwordAttempts + 1;
+      if (updatedAttempts >= 2) {
+        setPasswordAttempts(0);
+        setModalStep('confirmEmail');
+      } else {
+        setPasswordAttempts(updatedAttempts);
       }
-    };
+    }
+  };
 
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (imagePopupRef.current && !imagePopupRef.current.contains(target)) {
-        setShowImagePopup(false);
-      }
-    };
+  const handleFinalReset = () => {
+    // Assume password reset success → delete account
+    setModalStep('thankyou');
+  };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [setIsOpen]);
+  const renderModalFlow = () => {
+    switch (modalStep) {
+      case 'deletePassword':
+        return <DeletePasswordModal onNext={handlePasswordNext} />;
+      case 'confirmEmail':
+        return <ForgotPasswordModal onNext={() => setModalStep('otpMessage')} />;
+      case 'otpMessage':
+        return <OtpSentModal onNext={() => setModalStep('resetPassword')} />;
+      case 'resetPassword':
+        return <ResetPasswordModal onNext={handleFinalReset} />;
+      case 'forgotPassword':
+        return <ForgotPasswordModal onNext={() => setModalStep('otpMessage')} />;
+      case 'thankyou':
+        return <SuccessModal onClose={() => setModalStep('')} />;
+      default:
+        return null;
+    }
+  };
 
   if (!isOpen || !position) return null;
 
@@ -60,13 +88,14 @@ const SettingsPopup = () => {
   return (
     <div className="settings-popup-overlay">
       <div className="settings-popup-card" style={popupStyle} onClick={(e) => e.stopPropagation()}>
+        {/* Profile Image Edit */}
         <div className="settings-profile">
           <img src="src/assets/user.png" alt="Profile" className="settings-profile-icon" />
           <div className="settings-profile-edit" onClick={handleEditClick}>
             <FaEdit className="edit-icon" /> <span>Edit</span>
           </div>
           {showImagePopup && (
-            <div className="profile-image-popup" ref={imagePopupRef} onClick={(e) => e.stopPropagation()}>
+            <div className="profile-image-popup" ref={imagePopupRef}>
               <p>Upload or Remove Profile Picture</p>
               <button className="settings-save">Upload Image</button>
               <button className="settings-save" style={{ backgroundColor: '#b00020' }}>Remove Image</button>
@@ -74,6 +103,7 @@ const SettingsPopup = () => {
           )}
         </div>
 
+        {/* Sections */}
         {[{
           key: 'personal',
           label: 'Personal Details',
@@ -91,7 +121,7 @@ const SettingsPopup = () => {
               <input type="email" placeholder="Enter new email" />
               <button className="settings-save">Save Changes</button>
 
-              {/* 🔴 Delete Account */}
+              {/* Delete Account */}
               <div className="delete-account">
                 <p className="delete-title">Delete Account</p>
                 <label className="delete-subtitle">
@@ -132,6 +162,7 @@ const SettingsPopup = () => {
                 <button
                   className="settings-save"
                   style={{ backgroundColor: '#b00020', width: '100%', marginTop: '10px' }}
+                  onClick={handleDeleteAccount}
                 >
                   Confirm Delete
                 </button>
@@ -148,7 +179,19 @@ const SettingsPopup = () => {
               <input type="password" placeholder="Enter current password" />
               <label>New Password</label>
               <input type="password" placeholder="Enter new password" />
-              <button className="settings-save">Save Changes</button>
+              <button
+                className="settings-save"
+                onClick={() => setModalStep('deletePassword')}
+              >
+                Confirm Password
+              </button>
+              <p
+                className="settings-profile-edit"
+                style={{ marginTop: '5px', cursor: 'pointer' }}
+                onClick={() => setModalStep('forgotPassword')}
+              >
+                Forgot Password?
+              </p>
             </>
           )
         },
@@ -158,14 +201,8 @@ const SettingsPopup = () => {
           content: (
             <>
               {[
-                'Scam Alerts',
-                'Silent Mode',
-                'High Risk Only',
-                'All Suspicious',
-                'Instant Notification',
-                'Daily Summary',
-                'Enable Sound',
-                'Vibration',
+                'Scam Alerts', 'Silent Mode', 'High Risk Only', 'All Suspicious',
+                'Instant Notification', 'Daily Summary', 'Enable Sound', 'Vibration',
               ].map(label => (
                 <div className="settings-toggle-row" key={label}>
                   <span>{label}</span>
@@ -184,11 +221,13 @@ const SettingsPopup = () => {
           </div>
         ))}
 
+        {/* Auto Detection */}
         <div className="settings-autodetect-row">
           <span>Auto Detection</span>
           <Switch color="primary" checked={autoDetection} onChange={() => setAutoDetection(!autoDetection)} />
         </div>
 
+        {/* Priority */}
         <div className="settings-priority">
           <span>Priority</span>
           <div className="settings-radio-group">
@@ -207,8 +246,8 @@ const SettingsPopup = () => {
           </div>
           <div className="priority-msg">
             {priority === 'low' && <p>* Only major threats are flagged</p>}
-            {priority === 'medium' && <p>* A balanced level that detects most scams with fewer warnings.</p>}
-            {priority === 'high' && <p>* Flags even slight suspicious activity for maximum protection.</p>}
+            {priority === 'medium' && <p>* Balanced level with fewer warnings</p>}
+            {priority === 'high' && <p>* Flags even slight suspicious activity</p>}
           </div>
         </div>
 
@@ -216,6 +255,7 @@ const SettingsPopup = () => {
       </div>
 
       <div className="settings-blur-overlay" onClick={() => setIsOpen(false)}></div>
+      {renderModalFlow()}
     </div>
   );
 };
