@@ -1,35 +1,25 @@
 import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import ForgotPasswordModal from '../modals/ForgotPasswordModal';
 import OtpSentModal from '../modals/OtpSentModal';
-import ResetPasswordModal from '../modals/ResetPasswordModal';
-import SuccessModal from '../modals/SuccessModal';
-
+import UpdateOtpFlowModal from '../modals/UpdateOtpFlowModal';
 
 const SignInForm = ({ onClose }: { onClose: () => void }) => {
-  const [showForgot, setShowForgot] = useState(false);
   const [showOtpSent, setShowOtpSent] = useState(false);
-  const [showReset, setShowReset] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  const handleForgotConfirm = () => {
-    setShowForgot(false);
+  const handleSignIn = () => {
     setShowOtpSent(true);
   };
 
-  const handleOtpOk = () => {
+  const handleOtpSentNext = () => {
     setShowOtpSent(false);
-    setShowReset(true);
+    setShowOtpModal(true);
   };
 
-  const handleResetDone = () => {
-    setShowReset(false);
-    setShowSuccess(true);
-  };
-
-  const handleSuccessClose = () => {
-    setShowSuccess(false);
+  const handleOtpVerified = () => {
+    setShowOtpModal(false);
+    onClose(); // Close sign-in modal after verification
   };
 
   return (
@@ -40,7 +30,7 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
           <h2 className="auth-title">GUARD SPIRE</h2>
 
           <input className="auth-input" type="email" placeholder="Enter your email" />
-          
+
           <div className="auth-password-container">
             <input
               className="auth-input"
@@ -52,22 +42,20 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
             </span>
           </div>
 
-          <div className="auth-forgot" onClick={() => setShowForgot(true)}>Forgot password?</div>
+          <div className="auth-forgot">Forgot password?</div>
 
-          <button className="auth-btn">Sign In</button>
+          <button className="auth-btn" onClick={handleSignIn}>Sign In</button>
+
           <div className="auth-link">Don't have an account? <span onClick={onClose}>Sign Up</span></div>
 
           <button className="google-btn">
-            <img src="src/assets/search.png" className="google-icon" /> Continue with Google
+            <img src="src/assets/search.png" className="google-icon" alt="google" /> Continue with Google
           </button>
         </div>
       </div>
 
-      {showForgot && <ForgotPasswordModal onNext={handleForgotConfirm} />}
-      {showOtpSent && <OtpSentModal onNext={handleOtpOk} />}
-      {showReset && <ResetPasswordModal onNext={handleResetDone} />}
-      {showSuccess && <SuccessModal onClose={handleSuccessClose} />}
-
+      {showOtpSent && <OtpSentModal onNext={handleOtpSentNext} />}
+      {showOtpModal && <UpdateOtpFlowModal skipOtp={false} showThankYou={false} onComplete={handleOtpVerified} />}
     </>
   );
 };

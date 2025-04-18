@@ -1,4 +1,4 @@
-import {useRef, useState } from 'react'; //useEffect removed because it was not used
+import { useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp, FaEdit } from 'react-icons/fa';
 import { Switch } from '@mui/material';
 import { useSettings } from '../context/SettingsContext';
@@ -8,6 +8,8 @@ import OtpSentModal from '../modals/OtpSentModal';
 import ResetPasswordModal from '../modals/ResetPasswordModal';
 import SuccessModal from '../modals/SuccessModal';
 import DeletePasswordModal from '../modals/DeletePasswordModal';
+import DeleteConfirmModal from '../modals/DeleteConfirmModal';
+import UpdateOtpFlowModal from '../modals/UpdateOtpFlowModal';
 
 const SettingsPopup = () => {
   const { isOpen, position, setIsOpen } = useSettings();
@@ -19,6 +21,7 @@ const SettingsPopup = () => {
   const [otherReason, setOtherReason] = useState('');
   const [modalStep, setModalStep] = useState('');
   const [passwordAttempts, setPasswordAttempts] = useState(0);
+  const [otpFlowType, setOtpFlowType] = useState<'email' | 'password' | null>(null);
 
   const imagePopupRef = useRef<HTMLDivElement | null>(null);
 
@@ -32,7 +35,7 @@ const SettingsPopup = () => {
   };
 
   const handleDeleteAccount = () => {
-    setModalStep('deletePassword');
+    setModalStep('deleteConfirm');
     setPasswordAttempts(0);
   };
 
@@ -51,12 +54,18 @@ const SettingsPopup = () => {
   };
 
   const handleFinalReset = () => {
-    // Assume password reset success → delete account
     setModalStep('thankyou');
   };
 
   const renderModalFlow = () => {
     switch (modalStep) {
+      case 'deleteConfirm':
+        return (
+          <DeleteConfirmModal
+            onBack={() => setModalStep('')}
+            onYes={() => setModalStep('deletePassword')}
+          />
+        );
       case 'deletePassword':
         return <DeletePasswordModal onNext={handlePasswordNext} />;
       case 'confirmEmail':
@@ -88,7 +97,7 @@ const SettingsPopup = () => {
   return (
     <div className="settings-popup-overlay">
       <div className="settings-popup-card" style={popupStyle} onClick={(e) => e.stopPropagation()}>
-        {/* Profile Image Edit */}
+        {/* Profile Image */}
         <div className="settings-profile">
           <img src="src/assets/user.png" alt="Profile" className="settings-profile-icon" />
           <div className="settings-profile-edit" onClick={handleEditClick}>
@@ -119,36 +128,31 @@ const SettingsPopup = () => {
               <input type="email" placeholder="Enter current email" />
               <label>New Email</label>
               <input type="email" placeholder="Enter new email" />
-              <button className="settings-save">Save Changes</button>
+              <button className="settings-save" onClick={() => setOtpFlowType('email')}>
+                Save Changes
+              </button>
 
-              {/* Delete Account */}
+              {/* Delete Account Section */}
               <div className="delete-account">
                 <p className="delete-title">Delete Account</p>
                 <label className="delete-subtitle">
                   We are really sorry to see you go. Are you sure you want to delete your account?
                 </label>
-
                 <div className="delete-options-list">
-                  {[
-                    'No longer using my account',
-                    'Service is not good',
-                    'Don’t understand how to use',
-                    'Don’t need anymore',
-                    'Other'
-                  ].map(reason => (
-                    <div key={reason} className="delete-option">
-                      <input
-                        type="radio"
-                        name="deleteReason"
-                        value={reason}
-                        checked={deleteReason === reason}
-                        onChange={() => setDeleteReason(reason)}
-                      />
-                      <span>{reason}</span>
-                    </div>
-                  ))}
+                  {['No longer using my account', 'Service is not good', 'Don’t understand how to use', 'Don’t need anymore', 'Other']
+                    .map(reason => (
+                      <div key={reason} className="delete-option">
+                        <input
+                          type="radio"
+                          name="deleteReason"
+                          value={reason}
+                          checked={deleteReason === reason}
+                          onChange={() => setDeleteReason(reason)}
+                        />
+                        <span>{reason}</span>
+                      </div>
+                    ))}
                 </div>
-
                 {deleteReason === 'Other' && (
                   <input
                     type="text"
@@ -158,7 +162,6 @@ const SettingsPopup = () => {
                     onChange={(e) => setOtherReason(e.target.value)}
                   />
                 )}
-
                 <button
                   className="settings-save"
                   style={{ backgroundColor: '#b00020', width: '100%', marginTop: '10px' }}
@@ -181,9 +184,9 @@ const SettingsPopup = () => {
               <input type="password" placeholder="Enter new password" />
               <button
                 className="settings-save"
-                onClick={() => setModalStep('deletePassword')}
+                onClick={() => setOtpFlowType('password')}
               >
-                Confirm Password
+                Save Changes
               </button>
               <p
                 className="settings-profile-edit"
@@ -202,7 +205,7 @@ const SettingsPopup = () => {
             <>
               {[
                 'Scam Alerts', 'Silent Mode', 'High Risk Only', 'All Suspicious',
-                'Instant Notification', 'Daily Summary', 'Enable Sound', 'Vibration',
+                'Instant Notification', 'Daily Summary', 'Enable Sound', 'Vibration'
               ].map(label => (
                 <div className="settings-toggle-row" key={label}>
                   <span>{label}</span>
@@ -256,6 +259,13 @@ const SettingsPopup = () => {
 
       <div className="settings-blur-overlay" onClick={() => setIsOpen(false)}></div>
       {renderModalFlow()}
+      {otpFlowType && (
+        <UpdateOtpFlowModal
+          type={otpFlowType}
+          onClose={() => setOtpFlowType(null)} // Pass the onClose handler
+          onComplete={() => console.log('OTP flow completed')} // Provide the required onComplete prop
+        />
+      )}
     </div>
   );
 };

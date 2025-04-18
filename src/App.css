@@ -216,6 +216,7 @@ body, html {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
+  margin-left: -10px;
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -223,11 +224,14 @@ body, html {
 
 .auth-password-container{
   position: relative;
+  width: 100%;
 }
 
 .signupfrm-password-group {
   position: relative;
   margin-bottom: 18px;
+  margin-left: -10px;
+  width: 100%;
 }
 
 .signupfrm-password {
@@ -380,7 +384,7 @@ body, html {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  width: 50%;
+  width: 45%;
   font-size: 14px;
   margin-top: 8px;
 }
