@@ -946,6 +946,22 @@ body, html {
   color: black;
 }
 
+.progress-bar.red {
+  background-color: red !important;
+}
+
+.progress-bar.orange {
+  background-color: orange !important;
+}
+
+.progress-bar.green {
+  background-color: green !important;
+}
+
+.progress-bar.gray {
+  background-color: gray !important;
+}
+
 
 /* Msg & URL Scanner */
 .scanner-outer {
@@ -1168,46 +1184,53 @@ body, html {
 /* Report page styling */
 
 .report-container {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: calc(100vw - 60px); /* Full width minus sidebar */
+  height: calc(100vh - 60px); /* Full height minus header */
   background-color: #0c1b33;
   color: white;
   font-family: 'Poppins', sans-serif;
-  min-height: 100vh;
+  padding: 20px;
+  margin-left: 60px; /* Push content to the right of the sidebar */
+  margin-top: 60px; /* Push content below the header */
+  box-sizing: border-box;
+  overflow: auto; /* Allow scrolling for the entire content */
 }
 
-/* Header with Title and Progress */
 .report-header {
   background-color: #001a77;
-  padding: 20px;
+  padding: 10px 0px 0px; /* Reduce padding to decrease height */
   border-radius: 5px;
-  height: 60px;
+  width: 100%; /* Full width */
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: center; /* Center content vertically */
   margin-bottom: 20px;
-  margin-top: 60px;
-  margin-left: 60px;
 }
 
 .report-title {
-  font-size: 24px;
+  font-size: 20px; /* Adjust font size if needed */
   font-weight: 700;
   color: white;
+  margin: 20px; /* Remove extra margin */
 }
 
 .report-percentage-wrapper {
   text-align: center;
+  padding: 5px 10px 0px; /* Remove extra padding */
 }
 
 .report-circle {
-  width: 45px;
-  height: 45px;
+  width: 60px;
+  height: 60px;
   border: 5px solid rgb(254, 15, 15);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 20px;
 }
 
 .circle-text {
@@ -1223,38 +1246,26 @@ body, html {
   margin-top: 5px;
 }
 
-/* Main Card with Details */
 .report-card {
   background-color: #f0eeee;
   padding: 20px;
   border-radius: 4px;
   color: #000;
   font-size: 14px;
+  width: 100%; /* Full width */
+  max-width: 1125px; /* Optional: Limit max width for better readability */
   margin-bottom: 30px;
   text-align: left;
-  margin-left: 60px;
 }
 
-.report-card p {
-  margin: 20px 5px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-
-.report-subtitle {
-  margin-top: 16px;
-  font-weight: bold;
-}
-
-/* Footer Section */
 .report-footer {
-  background-color: #0c1b33;
-  padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
-  margin-left: 40px;
+  width: 100%; /* Full width */
+  max-width: 1165px; /* Optional: Limit max width */
+  gap: 20px;
 }
 
 .report-feedback-box {
@@ -1264,9 +1275,7 @@ body, html {
   background-color: transparent;
   color: white;
   width: 100%;
-  max-width: 600px;
   text-align: left;
-  margin: 0;
 }
 
 .feedback-title {
@@ -1281,11 +1290,9 @@ body, html {
 }
 
 .feedback-options {
-  margin: 0;
   display: flex;
   gap: 10px;
-  justify-content: flex-end; /* Align buttons to the right */
-  text-align: right;
+  justify-content: flex-end;
 }
 
 .feedback-btn {
@@ -1294,10 +1301,8 @@ body, html {
   color: #007BFF;
   font-weight: bold;
   cursor: pointer;
-  margin: 0;
 }
 
-/* Block & Report Button */
 .report-button {
   background-color: #04366D;
   color: white;
@@ -1305,10 +1310,14 @@ body, html {
   padding: 10px 20px;
   border-radius: 3px;
   border: none;
-  margin-top: 20px;
-  height: fit-content;
-  margin-right: -20px;
-  margin-top: -15px;
+  cursor: pointer;
+  margin-bottom: 30px; /* Add spacing below the button */
+  align-self: flex-start; /* Align the button to the left */
+  margin-left: 86.25%;
+}
+
+.report-button:hover {
+  background-color: #002855; /* Darker shade for hover effect */
 }
 
 /* History page Styling */
@@ -1342,11 +1351,12 @@ body, html {
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 30px;
-  width: 97.7%;
+  width: 100%; /* Ensure the card spans the full width of its container */
+  box-sizing: border-box; /* Include padding and border in the width */
 }
 
 .historypg-card.wide {
-  width: 97.5%;
+  width: 100%;
 }
 
 .historypg-row {
@@ -1387,7 +1397,7 @@ body, html {
   border: 1px solid #04366D;
   border-radius: 5px;
   cursor: pointer;
-  width: 220.75px;
+  width: 280.75px;
 }
 
 .historypg-tab.active {

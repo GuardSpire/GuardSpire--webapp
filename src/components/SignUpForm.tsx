@@ -1,21 +1,39 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import OtpSentModal from '../modals/OtpSentModal';
 import UpdateOtpFlowModal from '../modals/UpdateOtpFlowModal';
 
 const SignUpForm = ({ onClose }: { onClose: () => void }) => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-  const [showOtpSent, setShowOtpSent] = useState(false);
+  const [error, setError] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
 
-  const handleSignUp = () => {
-    setShowOtpSent(true); // First show the OTP sent popup
-  };
+  const handleSignUp = async () => {
+    setError('');
 
-  const handleOtpSentOk = () => {
-    setShowOtpSent(false);     // Hide OTP sent message
-    setShowOtpModal(true);     // Show OTP verification modal
+    if (!username || !email || !password) {
+      setError('All fields are required.');
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/signup', {
+        username,
+        email,
+        password,
+      });
+
+      if (response.status === 201) {
+        localStorage.setItem('email', email); // ✅ Save email for OTP
+        setShowOtpModal(true);
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Sign-up failed. Try again.';
+      setError(msg);
+    }
   };
 
   return (
@@ -27,14 +45,18 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
 
           <input
             type="text"
-            placeholder='Username (e.g., "Joe Fernando")'
+            placeholder="Username (e.g., Joe Fernando)"
             className="signupfrm-input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
 
           <input
             type="email"
-            placeholder='Email (e.g., "joe12@example.com")'
+            placeholder="Email (e.g., joe12@example.com)"
             className="signupfrm-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
 
           <div className="signupfrm-password-group">
@@ -42,22 +64,15 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
               type={passwordVisible ? 'text' : 'password'}
               placeholder="Enter your password"
               className="signupfrm-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
             <span onClick={() => setPasswordVisible(!passwordVisible)} className="signupfrm-eye-icon">
               {passwordVisible ? <FaEye /> : <FaEyeSlash />}
             </span>
           </div>
 
-          <div className="signupfrm-password-group">
-            <input
-              type={confirmPasswordVisible ? 'text' : 'password'}
-              placeholder="Confirm your password"
-              className="signupfrm-password"
-            />
-            <span onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)} className="signupfrm-eye-icon">
-              {confirmPasswordVisible ? <FaEye /> : <FaEyeSlash />}
-            </span>
-          </div>
+          {error && <div className="signupfrm-error">{error}</div>}
 
           <button className="signupfrm-btn" onClick={handleSignUp}>
             Sign Up
@@ -69,12 +84,10 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
         </div>
       </div>
 
-      {/* Step 1 - OTP sent info */}
-      {showOtpSent && <OtpSentModal onNext={handleOtpSentOk} />}
-
-      {/* Step 2 - OTP verification */}
+      {/* ✅ OTP Verification Modal after SignUp */}
       {showOtpModal && (
         <UpdateOtpFlowModal
+          type="signup"
           skipOtp={false}
           showThankYou={true}
           onComplete={() => setShowOtpModal(false)}

@@ -2,15 +2,38 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
+import axios from 'axios';
 
 const SettingsPage = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [autoDetection, setAutoDetection] = useState(true);
   const [priority, setPriority] = useState('medium');
+  const [currentUsername, setCurrentUsername] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const toggleSection = (section: string) => {
     setExpanded(prev => (prev === section ? null : section));
+  };
+
+  const handleUsernameUpdate = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.put('http://localhost:5000/api/account/update-info', {
+        currentUsername,
+        newUsername,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setMessage(response.data.message || "Username updated!");
+    } catch (err: any) {
+      console.error('Update failed:', err);
+      setMessage(err.response?.data?.error || "Failed to update username.");
+    }
   };
 
   return (
@@ -38,7 +61,28 @@ const SettingsPage = () => {
               </div>
               {expanded === section && (
                 <div className="settings-section-content">
-                  <p>{section} Settings go here</p>
+                  {section === 'Personal Details' ? (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Current Username"
+                        value={currentUsername}
+                        onChange={(e) => setCurrentUsername(e.target.value)}
+                        style={{ width: '100%', marginBottom: '10px' }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="New Username"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        style={{ width: '100%', marginBottom: '10px' }}
+                      />
+                      <button className="feedback-btn" onClick={handleUsernameUpdate}>Save Changes</button>
+                      {message && <p style={{ color: 'lime', marginTop: '10px' }}>{message}</p>}
+                    </>
+                  ) : (
+                    <p>{section} Settings go here</p>
+                  )}
                 </div>
               )}
             </div>

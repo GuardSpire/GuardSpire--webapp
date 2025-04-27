@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { FaCheckCircle } from 'react-icons/fa';
 
 interface Props {
-  type?: 'email' | 'password'; // ✅ Existing prop
+  type?: 'email' | 'password' | 'login' | 'signup'; 
   skipOtp?: boolean;
   showThankYou?: boolean;
   onComplete: () => void;
-  onClose?: () => void; // ✅ Newly added prop for settings
+  onClose?: () => void;
 }
 
 const UpdateOtpFlowModal: React.FC<Props> = ({
@@ -14,25 +15,67 @@ const UpdateOtpFlowModal: React.FC<Props> = ({
   skipOtp = false,
   showThankYou = true,
   onComplete,
-  onClose, // ✅ Accept the new prop
+  onClose,
 }) => {
   const [otpInput, setOtpInput] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [isOtpVerified, setIsOtpVerified] = useState(skipOtp);
   const [showSentPopup, setShowSentPopup] = useState(!skipOtp);
   const [showThankYouModal, setShowThankYouModal] = useState(false);
-  const correctOtp = '123456';
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleVerify = () => {
-    if (otpInput === correctOtp) {
-      setIsOtpVerified(true);
-      if (showThankYou) {
-        setShowThankYouModal(true);
-      } else {
-        onComplete();
+  const email = localStorage.getItem('email');
+  const currentEmail = localStorage.getItem('currentEmail');
+  const newEmail = localStorage.getItem('newEmail');
+  const currentPassword = localStorage.getItem('currentPassword');
+  const newPassword = localStorage.getItem('newPassword');
+
+  const handleVerify = async () => {
+    try {
+      if (type === 'login' || type === 'signup') {
+        // SignUp / Login OTP Verify
+        const response = await axios.post('http://localhost:5000/api/auth/verify-otp', {
+          email,
+          otp: otpInput,
+          purpose: type,
+        });
+
+        if (response.status === 200 && response.data.token) {
+          localStorage.setItem('token', response.data.token);
+          setIsOtpVerified(true);
+          if (showThankYou) {
+            setShowThankYouModal(true);
+          } else {
+            onComplete();
+          }
+        }
+      } else if (type === 'email' || type === 'password') {
+        // Email/Password Update OTP Verify
+        const token = localStorage.getItem('token');
+        const response = await axios.post('http://localhost:5000/api/account/verify-update-otp', {
+          otp: otpInput,
+          type: type,
+          ...(type === 'email' ? { currentEmail, newEmail } : {}),
+          ...(type === 'password' ? { currentPassword, newPassword } : {}),
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        });
+
+        if (response.status === 200) {
+          setIsOtpVerified(true);
+          if (showThankYou) {
+            setShowThankYouModal(true);
+          } else {
+            onComplete();
+          }
+        }
       }
-    } else {
-      setAttempts(attempts + 1);
+    } catch (err: any) {
+      setAttempts((prev) => prev + 1);
+      const msg = err?.response?.data?.error || 'Incorrect OTP. Please try again.';
+      setErrorMsg(msg);
     }
   };
 
@@ -47,7 +90,6 @@ const UpdateOtpFlowModal: React.FC<Props> = ({
 
   return (
     <>
-      {/* OTP Sent Info Modal */}
       {showSentPopup && (
         <div className="modal-overlay" onClick={handleSentOk}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -59,7 +101,6 @@ const UpdateOtpFlowModal: React.FC<Props> = ({
         </div>
       )}
 
-      {/* OTP Input Modal */}
       {!isOtpVerified && !showSentPopup && (
         <div className="modal-overlay" onClick={onClose || onComplete}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -71,15 +112,14 @@ const UpdateOtpFlowModal: React.FC<Props> = ({
               value={otpInput}
               onChange={(e) => setOtpInput(e.target.value)}
             />
-            {attempts > 0 && otpInput !== correctOtp && (
-              <p style={{ color: 'red', fontSize: '12px' }}>Incorrect OTP. Please try again.</p>
+            {attempts > 0 && errorMsg && (
+              <p style={{ color: 'red', fontSize: '12px' }}>{errorMsg}</p>
             )}
             <button className="modal-btn" onClick={handleVerify}>Verify</button>
           </div>
         </div>
       )}
 
-      {/* Thank You Modal */}
       {showThankYouModal && (
         <div className="modal-overlay" onClick={handleCloseThankYou}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>

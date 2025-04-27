@@ -1,32 +1,60 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import axios from 'axios';
 
 const MsgUrlScanner = () => {
   const [inputText, setInputText] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scanComplete, setScanComplete] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
   const navigate = useNavigate();
 
-  const handleScan = () => {
+  const handleScan = async () => {
     if (!inputText.trim()) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('User not authenticated. Please sign in.');
+      return;
+    }
 
     setIsScanning(true);
     setProgress(0);
     setScanComplete(false);
 
+    // 🔄 Simulate scanning progress
     const interval = setInterval(() => {
-      setProgress(prev => {
+      setProgress((prev) => {
         if (prev >= 1) {
           clearInterval(interval);
-          setIsScanning(false);
-          setScanComplete(true);
           return 1;
         }
         return prev + 0.1;
       });
     }, 200);
+
+    try {
+      // 🛠 Send the manual scan creation request
+      await axios.post(
+        'http://localhost:5000/api/scan/manual',
+        { inputText },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // ✅ Now fetch the latest scan result
+      const response = await axios.get('http://localhost:5000/api/scan/manual/report/latest', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setScanResult(response.data);
+      setScanComplete(true);
+      setIsScanning(false);
+    } catch (error) {
+      console.error('Scan failed:', error);
+      alert('Scan failed. Please try again.');
+      setIsScanning(false);
+    }
   };
 
   return (
@@ -61,7 +89,7 @@ const MsgUrlScanner = () => {
               className="scanner-input"
               placeholder="+ Add a Message or a URL to Scan"
               value={inputText}
-              onChange={e => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value)}
               disabled={isScanning}
             />
           )}
@@ -71,11 +99,11 @@ const MsgUrlScanner = () => {
           Scan
         </button>
 
-        {scanComplete && (
+        {scanComplete && scanResult && (
           <>
             <h3 className="scanner-subtitle">Status</h3>
             <div className="scanner-status-card">
-              <div className="scanner-status-header">Phishing Attack</div>
+              <div className="scanner-status-header">{scanResult.type}</div>
 
               <div className="scanner-status-body">
                 <div className="scanner-status-row">
@@ -89,24 +117,24 @@ const MsgUrlScanner = () => {
 
                 <div className="scanner-status-row">
                   <p className="scanner-status-label">Status</p>
-                  <p className="scanner-critical">Critical</p>
+                  <p className="scanner-critical">{scanResult.threatLevel}</p>
                 </div>
               </div>
 
               <div className="scanner-percentage-badge">
                 <div className="scanner-badge-circle">
-                  <span>100%</span>
+                  <span>{Math.round(scanResult.threatPercentage * 100)}%</span>
                 </div>
               </div>
             </div>
 
             <h3 className="scanner-subtitle">Alert Details & Insights</h3>
             <div className="scanner-alert-card">
-              <p><strong>Alert Type:</strong> Phishing Scam</p>
-              <p><strong>Affected Platform:</strong> Online Shopping (Daraz Impersonation)</p>
-              <p><strong>Suspicious URL:</strong> daraz-lk-offer.com</p>
-              <p><strong>Threat Level:</strong> High</p>
-              <p><strong>Description:</strong> This website appears to impersonate Daraz, ...</p>
+              <p><strong>Alert Type:</strong> {scanResult.type}</p>
+              <p><strong>Affected Platform:</strong> {scanResult.platform}</p>
+              <p><strong>Suspicious URL:</strong> {scanResult.url}</p>
+              <p><strong>Threat Level:</strong> {scanResult.threatLevel}</p>
+              <p><strong>Description:</strong> {scanResult.description}</p>
             </div>
 
             <button className="scanner-more-btn" onClick={() => navigate('/report')}>

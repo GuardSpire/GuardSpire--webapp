@@ -1,13 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
 
-interface QuickScanProps {
-  scanProgress?: number; // Optional prop (default to 85)
-}
+const QuickScan: React.FC = () => {
+  const [scanProgress, setScanProgress] = useState<number>(0);
+  const [totalScanned, setTotalScanned] = useState<number>(0);
+  const [scamsDetected, setScamsDetected] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
 
-const QuickScan: React.FC<QuickScanProps> = ({ scanProgress = 85 }) => {
-  const handleQuickScan = () => {
-    alert("Quick Scan initiated (simulate scan)!");
-    // Implement real scan logic here later
+  const handleQuickScan = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('User not authenticated. Please sign in.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await axios.get('http://localhost:5000/api/dashboard/quick-scan', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const { protectionPercent, totalScanned, scamsDetected } = response.data;
+      setScanProgress(protectionPercent);
+      setTotalScanned(totalScanned);
+      setScamsDetected(scamsDetected);
+    } catch (err) {
+      console.error('Quick Scan failed:', err);
+      alert('Quick Scan failed. Check console for details.');
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -51,9 +74,17 @@ const QuickScan: React.FC<QuickScanProps> = ({ scanProgress = 85 }) => {
           </text>
         </svg>
       </div>
-      <button className="quickscan-btn" onClick={handleQuickScan}>
-        Quick Scan
+
+      <button className="quickscan-btn" onClick={handleQuickScan} disabled={loading}>
+        {loading ? 'Scanning...' : 'Quick Scan'}
       </button>
+
+      {totalScanned > 0 && (
+        <div className="quickscan-summary">
+          <p><strong>Total Scans:</strong> {totalScanned}</p>
+          <p><strong>Scams Detected:</strong> {scamsDetected}</p>
+        </div>
+      )}
     </div>
   );
 };
