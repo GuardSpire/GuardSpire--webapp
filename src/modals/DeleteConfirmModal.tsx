@@ -1,6 +1,11 @@
 import { useState } from 'react';
 
-const DeleteConfirmModal = ({ onBack, onYes }: { onBack: () => void; onYes: () => void }) => {
+interface DeleteConfirmModalProps {
+  onBack: () => void;
+  onYes: () => void;
+}
+
+const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ onBack, onYes }) => {
   const [loading, setLoading] = useState(false);
 
   const handleYes = () => {
@@ -8,7 +13,7 @@ const DeleteConfirmModal = ({ onBack, onYes }: { onBack: () => void; onYes: () =
     setTimeout(() => {
       setLoading(false);
       onYes();
-    }, 300); // Optional delay to simulate UX feedback
+    }, 300);
   };
 
   return (

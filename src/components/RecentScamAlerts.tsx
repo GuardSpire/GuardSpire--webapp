@@ -4,11 +4,17 @@ import axios from 'axios';
 
 const RecentScamAlerts: React.FC = () => {
   const [scamData, setScamData] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAlerts = async () => {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setErrorMessage("User not authenticated.");
+        return;
+      }
+
       try {
         const response = await axios.get('http://localhost:5000/api/dashboard/recent-alerts', {
           headers: {
@@ -16,32 +22,67 @@ const RecentScamAlerts: React.FC = () => {
           },
         });
 
-        const alerts = response.data.recentAlerts.map((alert: any) => {
-          let color = 'gray';
-          let percentage = 0;
+        const data = response.data;
 
-          const threatLevel = alert.threatLevel?.toLowerCase();
+        if (data.error) {
+          if (data.error.includes("'list' object has no attribute 'values'")) {
+            setErrorMessage("Scan data format not supported in web. Please use the mobile app.");
+          } else {
+            setErrorMessage(data.error || "Failed to fetch scam alerts.");
+          }
+          return;
+        }
+
+        const alerts = data.recentAlerts || [];
+        // Log the raw alerts to debug the number of records returned by the API
+        console.log('Raw alerts from API:', alerts);
+
+        // Remove duplicates based on scanId
+        const uniqueAlerts = [];
+        const seenScanIds = new Set();
+        for (const alert of alerts) {
+          const scanId = alert.scan_id || alert.scanId;
+          if (!seenScanIds.has(scanId)) {
+            seenScanIds.add(scanId);
+            uniqueAlerts.push(alert);
+          }
+        }
+
+        // Log the unique alerts to debug the deduplication process
+        console.log('Unique alerts after deduplication:', uniqueAlerts);
+
+        // Take the first 10 unique alerts
+        const displayAlerts = uniqueAlerts.slice(0, 10);
+
+        // Log the final display alerts
+        console.log('Final alerts to display:', displayAlerts);
+
+        const processedAlerts = displayAlerts.map((alert: any) => {
+          const threatLevel = alert.threatLevel?.toLowerCase() || 'stable';
+          const percentage = Math.round(alert.threatPercentage ?? 0);
+
+          let color = '#4CAF50';
           if (threatLevel === 'critical') {
-            color = 'red';
-            percentage = 100;
+            color = '#FF0000';
           } else if (threatLevel === 'suspicious') {
-            color = 'orange';
-            percentage = 60;
-          } else if (threatLevel === 'stable') {
-            color = 'green';
-            percentage = 0;
+            color = '#FFD700';
+          } else if (threatLevel === 'stable' || threatLevel === 'legitimate') {
+            color = '#4CAF50';
           }
 
           return {
             ...alert,
+            scanId: alert.scan_id || alert.scanId, // Ensure scanId is set
             color,
             percentage,
           };
         });
 
-        setScamData(alerts);
-      } catch (err) {
+        setScamData(processedAlerts);
+        setErrorMessage(null);
+      } catch (err: any) {
         console.error('Failed to fetch scam alerts', err);
+        setErrorMessage(err?.response?.data?.error || 'Failed to load alerts.');
       }
     };
 
@@ -49,39 +90,83 @@ const RecentScamAlerts: React.FC = () => {
   }, []);
 
   const handleNavigate = (scan: any) => {
-    navigate('/report', { state: { scan } });
+    console.log('Navigating with scan:', scan);
+    navigate('/report', { state: { scan: { scanId: scan.scanId, ...scan } } });
   };
 
   return (
     <div className="recent-outer-card">
       <h3 className="section-title">Recent Scam Alerts</h3>
-      <div className="recent-inner-card">
-        <div className="scam-alert-header">
-          <span>Detection</span>
-          <span>Threat Level</span>
-          <span>Status</span>
-        </div>
 
-        {scamData.map((item, index) => (
+      {errorMessage ? (
+        <div style={{ color: 'red', marginTop: 10 }}>{errorMessage}</div>
+      ) : (
+        <div className="recent-inner-card">
           <div
-            className="scam-alert-row"
-            key={index}
-            onClick={() => handleNavigate(item)}
+            className="scam-alert-header"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontWeight: 'bold',
+              padding: '0 10px',
+              marginBottom: 10,
+            }}
           >
-            <span className="alert-text">{item.type}</span>
-            <div className="bar">
-              <div
-                className="progress-bar"
-                style={{
-                  width: `${item.percentage}%`,
-                  backgroundColor: item.color,
-                }}
-              />
-            </div>
-            <span className="alert-percent">{item.percentage}%</span>
+            <span style={{ width: '30%' }}>Detection</span>
+            <span style={{ width: '50%' }}>Threat Level</span>
+            <span style={{ width: '20%', textAlign: 'right' }}>Status</span>
           </div>
-        ))}
-      </div>
+
+          {scamData.length === 0 ? (
+            <p style={{ marginTop: 10, textAlign: 'center' }}>No recent alerts</p>
+          ) : (
+            scamData.map((item, index) => (
+              <div
+                className="scam-alert-row"
+                key={index}
+                onClick={() => handleNavigate(item)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                <span className="alert-text" style={{ width: '30%' }}>{item.platform || 'Unknown'}</span>
+
+                <div
+                  className="bar"
+                  style={{
+                    width: '50%',
+                    height: 10,
+                    backgroundColor: '#eee',
+                    borderRadius: 5,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    className="progress-bar"
+                    style={{
+                      width: `${item.percentage}%`,
+                      height: '100%',
+                      backgroundColor: item.color,
+                      transition: 'width 0.3s',
+                    }}
+                  />
+                </div>
+
+                <span
+                  className="alert-percent"
+                  style={{ width: '20%', textAlign: 'right', fontWeight: 'bold' }}
+                >
+                  {item.percentage}%
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };

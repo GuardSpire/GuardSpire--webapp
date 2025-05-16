@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-const ForgotPasswordModal = ({ onNext }: { onNext: () => void }) => {
+interface ForgotPasswordModalProps {
+  onNext: () => void;
+}
+
+const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onNext }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -9,23 +13,20 @@ const ForgotPasswordModal = ({ onNext }: { onNext: () => void }) => {
   const handleConfirm = async () => {
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/auth/forgot-password/request', {
-        email,
-      });
-      localStorage.setItem('forgotPasswordEmail', email); // ✅ save email for next steps
+      await axios.post('http://localhost:5000/api/auth/forgot-password/request', { email });
+      localStorage.setItem('forgotPasswordEmail', email);
       setLoading(false);
       onNext();
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg('Failed to send OTP. Please try again.');
-      console.error('Failed to send OTP', err);
+      setErrorMsg(err.response?.data?.error || 'Failed to send OTP.');
     }
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        <h4 className="modal-title">Forget Password</h4>
+        <h4 className="modal-title">Forgot Password</h4>
         <input
           className="modal-input"
           type="email"

@@ -9,6 +9,7 @@ const QuickScan: React.FC = () => {
 
   const handleQuickScan = async () => {
     const token = localStorage.getItem('token');
+
     if (!token) {
       alert('User not authenticated. Please sign in.');
       return;
@@ -18,16 +19,48 @@ const QuickScan: React.FC = () => {
 
     try {
       const response = await axios.get('http://localhost:5000/api/dashboard/quick-scan', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
 
-      const { protectionPercent, totalScanned, scamsDetected } = response.data;
-      setScanProgress(protectionPercent);
-      setTotalScanned(totalScanned);
-      setScamsDetected(scamsDetected);
-    } catch (err) {
+      const data = response.data;
+
+      // Handle known backend error cases
+      if (data.error) {
+        if (data.error.includes("'list' object has no attribute 'values'")) {
+          alert("Scan data format not supported in web yet. Please use the mobile app.");
+        } else if (data.error.includes("Missing Authorization header")) {
+          alert("Authorization failed. Please sign in again.");
+        } else {
+          alert(data.error || "An unexpected error occurred.");
+        }
+
+        setScanProgress(0);
+        setTotalScanned(0);
+        setScamsDetected(0);
+        setLoading(false);
+        return;
+      }
+
+      // Normal data structure
+      if (
+        typeof data.protectionPercent === 'number' &&
+        typeof data.totalScanned === 'number' &&
+        typeof data.scamsDetected === 'number'
+      ) {
+        setScanProgress(data.protectionPercent);
+        setTotalScanned(data.totalScanned);
+        setScamsDetected(data.scamsDetected);
+      } else {
+        console.error('Unexpected response structure:', data);
+        alert('Unexpected data received from server.');
+      }
+
+    } catch (err: any) {
       console.error('Quick Scan failed:', err);
-      alert('Quick Scan failed. Check console for details.');
+      const errorMessage = err?.response?.data?.error || err.message || 'Quick Scan failed. Check console for details.';
+      alert(errorMessage);
     }
 
     setLoading(false);

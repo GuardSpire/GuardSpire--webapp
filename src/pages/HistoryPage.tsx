@@ -10,9 +10,10 @@ interface HistoryItem {
   threatLevel: string;
   timestamp: string;
   description: string;
-  type?: string; // ✅ added optional type
-  percentage: number;
-  dateLabel: string;
+  threatCategory?: string;
+  scan_id: string;
+  threatPercentage: number;
+  label: string;
 }
 
 const HistoryPage = () => {
@@ -25,33 +26,29 @@ const HistoryPage = () => {
       const token = localStorage.getItem('token');
       try {
         const response = await axios.get('http://localhost:5000/api/scan/history', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        const parsed = response.data.history.map((item: any) => {
-          let percentage = 0;
-          const level = item.threatLevel?.toLowerCase();
-          if (level === 'critical') percentage = 100;
-          else if (level === 'suspicious') percentage = 60;
-          else if (level === 'stable') percentage = 0;
+        const parsed: HistoryItem[] = (response.data.history || []).map((item: any) => {
+          const rawConfidence = item.confidence ?? item.threatPercentage ?? 0;
+          const threatPercentage =
+            typeof rawConfidence === 'string'
+              ? parseFloat(rawConfidence.replace('%', '')) || 0
+              : rawConfidence <= 1
+              ? rawConfidence * 100
+              : rawConfidence;
 
-          const date = new Date(item.timestamp);
-          const today = new Date();
-          let label = 'Other';
-          if (date.toDateString() === today.toDateString()) {
-            label = 'Monthly';
-          } else if (date.getMonth() === today.getMonth()) {
-            label = 'Monthly';
-          } else if (date.getFullYear() === today.getFullYear()) {
-            label = 'Yearly';
-          }
+          const threatCategory = (item.threatCategory || item.threatLevel || 'legitimate').toLowerCase();
+          let label = 'Legitimate';
+          if (threatCategory === 'critical') label = 'Scam Alert';
+          else if (threatCategory === 'suspicious') label = 'Potential Threat';
 
           return {
             ...item,
-            percentage,
-            dateLabel: label,
+            scan_id: item.scan_id || item._id,
+            threatPercentage,
+            threatCategory,
+            label,
           };
         });
 
@@ -68,14 +65,27 @@ const HistoryPage = () => {
 
   const filteredData = historyData.filter((item) => {
     if (selectedFilter === 'All') return true;
-    if (selectedFilter === 'Daily') return item.dateLabel === 'Monthly';
-    if (selectedFilter === 'Monthly') return item.dateLabel === 'Monthly';
-    if (selectedFilter === 'Yearly') return item.dateLabel === 'Yearly';
+
+    const itemDate = new Date(item.timestamp);
+    const now = new Date();
+
+    if (selectedFilter === 'Daily') {
+      return itemDate.toDateString() === now.toDateString();
+    }
+
+    if (selectedFilter === 'Monthly') {
+      return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+    }
+
+    if (selectedFilter === 'Yearly') {
+      return itemDate.getFullYear() === now.getFullYear();
+    }
+
     return true;
   });
 
   const handleNavigate = (item: HistoryItem) => {
-    navigate('/report', { state: { scan: item } }); // ✅ Pass clicked scam
+    navigate('/report', { state: { scan: { ...item, scanId: item.scan_id } } });
   };
 
   return (
@@ -86,19 +96,18 @@ const HistoryPage = () => {
 
         <h2 className="historypg-section-title">Recent History</h2>
         <div className="historypg-card">
-          {historyData.slice(0, 5).map((item, index) => (
+          {historyData.slice(0, 3).map((item, index) => (
             <div key={index} className="historypg-row" onClick={() => handleNavigate(item)}>
-              <p className="historypg-text">{item.type || item.input}</p>
-              <p className="historypg-percentage">{item.percentage}%</p>
+              <p className="historypg-text">{item.label}</p>
+              <p className="historypg-percentage">{Math.round(item.threatPercentage)}%</p>
             </div>
           ))}
         </div>
 
-
         <h2 className="historypg-section-title">Past History</h2>
 
         <div className="historypg-tabs">
-          {filterOptions.map(filter => (
+          {filterOptions.map((filter) => (
             <button
               key={filter}
               className={`historypg-tab ${selectedFilter === filter ? 'active' : ''}`}
@@ -112,8 +121,8 @@ const HistoryPage = () => {
         <div className="historypg-card wide">
           {filteredData.map((item, index) => (
             <div key={index} className="historypg-row" onClick={() => handleNavigate(item)}>
-              <p className="historypg-text">{item.type || item.input}</p> {/* ✅ updated */}
-              <p className="historypg-percentage">{item.percentage}%</p>
+              <p className="historypg-text">{item.label}</p>
+              <p className="historypg-percentage">{Math.round(item.threatPercentage)}%</p>
             </div>
           ))}
         </div>

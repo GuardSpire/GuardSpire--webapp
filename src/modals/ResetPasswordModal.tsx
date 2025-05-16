@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-const ResetPasswordModal = ({ onNext }: { onNext: () => void }) => {
+interface ResetPasswordModalProps {
+  onNext: () => void;
+}
+
+const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ onNext }) => {
   const [otpInput, setOtpInput] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -9,14 +13,26 @@ const ResetPasswordModal = ({ onNext }: { onNext: () => void }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const email = localStorage.getItem('forgotPasswordEmail'); // ✅ get saved email
+  const email = localStorage.getItem('forgotPasswordEmail');
 
-  const handleOtpVerify = () => {
-    if (otpInput.length === 6) {
+  const handleOtpVerify = async () => {
+    if (otpInput.length !== 6) {
+      setErrorMsg('Please enter a valid 6-digit OTP.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.post('http://localhost:5000/api/auth/forgot-password/verify-otp', {
+        email,
+        otp: otpInput,
+      });
       setIsOtpVerified(true);
       setErrorMsg('');
-    } else {
-      setErrorMsg('Please enter a valid 6-digit OTP.');
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.error || 'Invalid OTP.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -25,6 +41,7 @@ const ResetPasswordModal = ({ onNext }: { onNext: () => void }) => {
       setErrorMsg('Passwords do not match.');
       return;
     }
+
     try {
       setLoading(true);
       await axios.post('http://localhost:5000/api/auth/forgot-password/reset', {
@@ -33,8 +50,8 @@ const ResetPasswordModal = ({ onNext }: { onNext: () => void }) => {
         newPassword,
         confirmPassword,
       });
-      setErrorMsg('');
-      onNext(); // ✅ Password reset complete
+      localStorage.removeItem('forgotPasswordEmail');
+      onNext();
     } catch (err: any) {
       setErrorMsg(err.response?.data?.error || 'Failed to reset password.');
     } finally {
@@ -46,7 +63,6 @@ const ResetPasswordModal = ({ onNext }: { onNext: () => void }) => {
     <div className="modal-overlay">
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <h4 className="modal-title">Reset Password</h4>
-
         {!isOtpVerified ? (
           <>
             <input

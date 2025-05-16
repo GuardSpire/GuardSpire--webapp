@@ -7,15 +7,22 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [error, setError] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   const handleSignUp = async () => {
     setError('');
 
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !confirmPassword) {
       setError('All fields are required.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
       return;
     }
 
@@ -27,7 +34,7 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
       });
 
       if (response.status === 201) {
-        localStorage.setItem('email', email); // ✅ Save email for OTP
+        localStorage.setItem('signupEmail', email);
         setShowOtpModal(true);
       }
     } catch (err: any) {
@@ -67,8 +74,27 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <span onClick={() => setPasswordVisible(!passwordVisible)} className="signupfrm-eye-icon">
+            <span
+              onClick={() => setPasswordVisible(!passwordVisible)}
+              className="signupfrm-eye-icon"
+            >
               {passwordVisible ? <FaEye /> : <FaEyeSlash />}
+            </span>
+          </div>
+
+          <div className="signupfrm-password-group">
+            <input
+              type={confirmPasswordVisible ? 'text' : 'password'}
+              placeholder="Confirm your password"
+              className="signupfrm-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            <span
+              onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+              className="signupfrm-eye-icon"
+            >
+              {confirmPasswordVisible ? <FaEye /> : <FaEyeSlash />}
             </span>
           </div>
 
@@ -84,13 +110,15 @@ const SignUpForm = ({ onClose }: { onClose: () => void }) => {
         </div>
       </div>
 
-      {/* ✅ OTP Verification Modal after SignUp */}
       {showOtpModal && (
         <UpdateOtpFlowModal
           type="signup"
           skipOtp={false}
           showThankYou={true}
-          onComplete={() => setShowOtpModal(false)}
+          onComplete={() => {
+            setShowOtpModal(false);
+            onClose(); // Close form after OTP verification
+          }}
         />
       )}
     </>

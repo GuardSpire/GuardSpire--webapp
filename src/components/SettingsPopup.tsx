@@ -3,7 +3,6 @@ import { FaChevronDown, FaChevronUp, FaEdit, FaEye, FaEyeSlash } from 'react-ico
 import { Switch } from '@mui/material';
 import { useSettings } from '../context/SettingsContext';
 import axios from 'axios';
-
 import ForgotPasswordModal from '../modals/ForgotPasswordModal';
 import OtpSentModal from '../modals/OtpSentModal';
 import ResetPasswordModal from '../modals/ResetPasswordModal';
@@ -21,7 +20,6 @@ const SettingsPopup = () => {
   const [deleteReason, setDeleteReason] = useState('');
   const [otherReason, setOtherReason] = useState('');
   const [modalStep, setModalStep] = useState('');
-  const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [otpFlowType, setOtpFlowType] = useState<'email' | 'password' | null>(null);
   const [currentUsername, setCurrentUsername] = useState('');
   const [newUsername, setNewUsername] = useState('');
@@ -31,7 +29,7 @@ const SettingsPopup = () => {
   const [newPassword, setNewPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-
+  const [message, setMessage] = useState<string | null>(null);
 
   const imagePopupRef = useRef<HTMLDivElement | null>(null);
 
@@ -43,61 +41,107 @@ const SettingsPopup = () => {
     e.stopPropagation();
     setShowImagePopup(true);
   };
-// --------------Delete handling-------------------
+
+  const updateUsername = async () => {
+    const token = localStorage.getItem('token');
+    if (!currentUsername || !newUsername) {
+      setMessage('Please enter both current and new username.');
+      return;
+    }
+
+    try {
+      await axios.put('http://localhost:5000/api/account/update-info', {
+        currentUsername,
+        newUsername,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setMessage('Username updated successfully!');
+      setCurrentUsername('');
+      setNewUsername('');
+    } catch (error: any) {
+      setMessage(error.response?.data?.error || 'Failed to update username.');
+    }
+  };
+
+  const handleSaveChanges = async (type: 'email' | 'password') => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    setMessage('Unauthorized. Please log in.');
+    return;
+  }
+
+  if (type === 'email' && (!currentEmail || !newEmail)) {
+    setMessage('Please enter both current and new email.');
+    return;
+  }
+  if (type === 'password' && (!currentPassword || !newPassword)) {
+    setMessage('Please enter both current and new password.');
+    return;
+  }
+
+  try {
+    await axios.post('http://localhost:5000/api/account/request-otp-update', 
+      { type },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (type === 'email') {
+      localStorage.setItem('currentEmail', currentEmail);
+      localStorage.setItem('newEmail', newEmail);
+    } else {
+      localStorage.setItem('currentPassword', currentPassword);
+      localStorage.setItem('newPassword', newPassword);
+    }
+    setOtpFlowType(type);
+  } catch (error: any) {
+    setMessage(error.response?.data?.error || 'Failed to request OTP.');
+  }
+};
+
+// Render UpdateOtpFlowModal
+  {otpFlowType && (
+    <UpdateOtpFlowModal
+      type={otpFlowType}
+      onClose={() => setOtpFlowType(null)}
+      onComplete={() => {
+        if (otpFlowType === 'email') {
+          setMessage('Email updated successfully!');
+          setCurrentEmail('');
+          setNewEmail('');
+        } else if (otpFlowType === 'password') {
+          setMessage('Password updated successfully!');
+          setCurrentPassword('');
+          setNewPassword('');
+        }
+        setOtpFlowType(null);
+      }}
+    />
+  )}
 
   const handleDeleteAccount = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('No token found');
+      setMessage('Unauthorized. Please log in.');
       return;
     }
-  
+
+    const reason = deleteReason === 'Other' && otherReason.trim() ? otherReason : deleteReason;
+    if (!reason) {
+      setMessage('Please select or enter a reason for deletion.');
+      return;
+    }
+
     try {
-      if (deleteReason) {
-        await axios.post('http://localhost:5000/api/delete/reason', { reason: deleteReason }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
+      await axios.post('http://localhost:5000/api/delete/reason', 
+        { reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setModalStep('deleteConfirm');
-      setPasswordAttempts(0);
     } catch (error: any) {
-      console.error('Failed to save delete reason:', error?.response?.data?.error || error.message);
-    }
-  };
-  
-  const handlePasswordNext = async (correct: boolean) => {
-    if (correct) {
-      // ✅ Password correct → now delete the account immediately
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete('http://localhost:5000/api/delete/final', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setModalStep('thankyou');
-      } catch (error: any) {
-        console.error('Failed to delete account:', error?.response?.data?.error || error.message);
-      }
-    } else {
-      const updatedAttempts = passwordAttempts + 1;
-      if (updatedAttempts >= 2) {
-        setPasswordAttempts(0);
-        setModalStep('confirmEmail'); // ⚡ Go to Forgot Password flow
-      } else {
-        setPasswordAttempts(updatedAttempts);
-      }
-    }
-  };
-  
-  const handleFinalReset = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      // After password reset, delete the account
-      await axios.delete('http://localhost:5000/api/delete/final', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setModalStep('thankyou');
-    } catch (error: any) {
-      console.error('Failed to delete account after reset:', error?.response?.data?.error || error.message);
+      setMessage(error.response?.data?.error || 'Failed to save delete reason.');
     }
   };
 
@@ -111,22 +155,46 @@ const SettingsPopup = () => {
           />
         );
       case 'deletePassword':
-        return <DeletePasswordModal onNext={handlePasswordNext} />;
-      case 'confirmEmail':
+        return (
+          <DeletePasswordModal
+            onNext={(isCorrect: boolean) => {
+              if (isCorrect) {
+                setModalStep('finalDelete');
+              } else {
+                setModalStep('forgotPassword');
+              }
+            }}
+          />
+        );
+      case 'forgotPassword':
         return <ForgotPasswordModal onNext={() => setModalStep('otpMessage')} />;
       case 'otpMessage':
         return <OtpSentModal onNext={() => setModalStep('resetPassword')} />;
       case 'resetPassword':
-        return <ResetPasswordModal onNext={handleFinalReset} />;
-      case 'forgotPassword':
-        return <ForgotPasswordModal onNext={() => setModalStep('otpMessage')} />;
+        return <ResetPasswordModal onNext={() => setModalStep('finalDelete')} />;
+      case 'finalDelete':
+        return (
+          <DeleteConfirmModal
+            onBack={() => setModalStep('')}
+            onYes={async () => {
+              try {
+                const token = localStorage.getItem('token');
+                await axios.delete('http://localhost:5000/api/delete/final', {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setModalStep('thankyou');
+              } catch (error: any) {
+                setMessage(error.response?.data?.error || 'Failed to delete account.');
+              }
+            }}
+          />
+        );
       case 'thankyou':
         return <SuccessModal onClose={() => setModalStep('')} />;
       default:
         return null;
     }
   };
-  
 
   if (!isOpen || !position) return null;
 
@@ -139,92 +207,11 @@ const SettingsPopup = () => {
     zIndex: 9999,
   };
 
-  const updateUsername = async () => {
-    const token = localStorage.getItem('token');
-  
-    if (!currentUsername || !newUsername) {
-      alert('Please enter both current and new username.');
-      return;
-    }
-  
-    try {
-      const response = await axios.put('http://localhost:5000/api/account/update-info', {
-        currentUsername,
-        newUsername,
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      if (response.status === 200) {
-        alert('Username updated successfully!');
-        setCurrentUsername('');
-        setNewUsername('');
-      }
-    } catch (error: any) {
-      const msg = error?.response?.data?.error || 'Failed to update username';
-      alert(msg);
-    }
-  };
-  
-  // const requestOtpForUpdate = async (type: 'email' | 'password') => {
-  //   const token = localStorage.getItem('token');
-  //   try {
-  //     await axios.post('http://localhost:5000/api/account/request-otp-update', {
-  //       type: type
-  //     }, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     setOtpFlowType(type); // ✅ open OTP modal
-  //   } catch (error: any) {
-  //     alert(error.response?.data?.error || 'Failed to send OTP');
-  //   }
-  // };
-
-  const handleSaveChanges = async (type: 'email' | 'password') => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('Token not found');
-        return;
-      }
-  
-      if (type === 'email') {
-        if (!currentEmail || !newEmail) {
-          alert('Please enter both current and new email.');
-          return;
-        }
-        localStorage.setItem('currentEmail', currentEmail);
-        localStorage.setItem('newEmail', newEmail);
-      } else if (type === 'password') {
-        if (!currentPassword || !newPassword) {
-          alert('Please enter both current and new password.');
-          return;
-        }
-        localStorage.setItem('currentPassword', currentPassword);
-        localStorage.setItem('newPassword', newPassword);
-      }
-  
-      await axios.post('http://localhost:5000/api/account/request-otp-update', 
-        { type },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-  
-      setOtpFlowType(type);  // ✅ open OTP modal
-    } catch (err) {
-      console.error('Failed to request OTP:', err);
-    }
-  };  
-
   return (
     <div className="settings-popup-overlay">
       <div className="settings-popup-card" style={popupStyle} onClick={(e) => e.stopPropagation()}>
-        {/* Profile Image */}
         <div className="settings-profile">
-          <img src="src/assets/user.png" alt="Profile" className="settings-profile-icon" />
+          <img src="/user.png" alt="Profile" className="settings-profile-icon" />
           <div className="settings-profile-edit" onClick={handleEditClick}>
             <FaEdit className="edit-icon" /> <span>Edit</span>
           </div>
@@ -237,13 +224,11 @@ const SettingsPopup = () => {
           )}
         </div>
 
-        {/* Sections */}
         {[{
           key: 'personal',
           label: 'Personal Details',
           content: (
             <>
-           {/* username section */}
               <label>Current Username</label>
               <input
                 type="text"
@@ -259,31 +244,27 @@ const SettingsPopup = () => {
                 onChange={(e) => setNewUsername(e.target.value)}
               />
               <button className="settings-save" onClick={updateUsername}>Save Changes</button>
-                {/* email section */}
-                <label>Current Email</label>
-                <input
-                  type="email"
-                  placeholder="Enter current email"
-                  value={currentEmail}
-                  onChange={(e) => setCurrentEmail(e.target.value)}
-                />
-                <label>New Email</label>
-                <input
-                  type="email"
-                  placeholder="Enter new email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                />
-                <button className="settings-save" onClick={() => handleSaveChanges('email')}>
-                  Save Changes
-                </button>
-
-
-              {/* Delete Account Section */}
+              <label>Current Email</label>
+              <input
+                type="email"
+                placeholder="Enter current email"
+                value={currentEmail}
+                onChange={(e) => setCurrentEmail(e.target.value)}
+              />
+              <label>New Email</label>
+              <input
+                type="email"
+                placeholder="Enter new email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+              <button className="settings-save" onClick={() => handleSaveChanges('email')}>
+                Save Changes
+              </button>
               <div className="delete-account">
                 <p className="delete-title">Delete Account</p>
                 <label className="delete-subtitle">
-                  We are really sorry to see you go. Are you sure you want to delete your account?
+                  We are sorry to see you go. Are you sure you want to delete your account?
                 </label>
                 <div className="delete-options-list">
                   {['No longer using my account', 'Service is not good', 'Don’t understand how to use', 'Don’t need anymore', 'Other']
@@ -325,39 +306,35 @@ const SettingsPopup = () => {
           label: 'Password',
           content: (
             <>
-              {/* Password Section with Correct Eye Logic */}
               <label>Current Password</label>
               <div className="auth-password-container">
                 <input
                   className="auth-input"
-                  type={showCurrentPassword ? 'text' : 'password'} // 🔥 FIXED
+                  type={showCurrentPassword ? 'text' : 'password'}
                   placeholder="Enter current password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
-                <span className="auth-eye" onClick={() => setShowCurrentPassword(prev => !prev)}>
-                  {showCurrentPassword ? <FaEye /> : <FaEyeSlash />} {/* 🔥 FIXED */}
+                <span className="auth-eye" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                  {showCurrentPassword ? <FaEye /> : <FaEyeSlash />}
                 </span>
               </div>
-        
               <label>New Password</label>
               <div className="auth-password-container">
                 <input
                   className="auth-input"
-                  type={showNewPassword ? 'text' : 'password'} // 🔥 FIXED
+                  type={showNewPassword ? 'text' : 'password'}
                   placeholder="Enter new password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
-                <span className="auth-eye" onClick={() => setShowNewPassword(prev => !prev)}>
-                  {showNewPassword ? <FaEye /> : <FaEyeSlash />} {/* 🔥 FIXED */}
+                <span className="auth-eye" onClick={() => setShowNewPassword(!showNewPassword)}>
+                  {showNewPassword ? <FaEye /> : <FaEyeSlash />}
                 </span>
               </div>
-        
               <button className="settings-save" onClick={() => handleSaveChanges('password')}>
                 Save Changes
               </button>
-        
               <p
                 className="settings-profile-edit"
                 style={{ marginTop: '5px', cursor: 'pointer' }}
@@ -394,13 +371,11 @@ const SettingsPopup = () => {
           </div>
         ))}
 
-        {/* Auto Detection */}
         <div className="settings-autodetect-row">
           <span>Auto Detection</span>
           <Switch color="primary" checked={autoDetection} onChange={() => setAutoDetection(!autoDetection)} />
         </div>
 
-        {/* Priority */}
         <div className="settings-priority">
           <span>Priority</span>
           <div className="settings-radio-group">
@@ -425,6 +400,7 @@ const SettingsPopup = () => {
         </div>
 
         <button className="settings-help">Help</button>
+        {message && <p style={{ color: message.includes('successfully') ? 'lime' : 'red', marginTop: '10px' }}>{message}</p>}
       </div>
 
       <div className="settings-blur-overlay" onClick={() => setIsOpen(false)}></div>
@@ -435,19 +411,18 @@ const SettingsPopup = () => {
           onClose={() => setOtpFlowType(null)}
           onComplete={() => {
             if (otpFlowType === 'email') {
+              setMessage('Email updated successfully!');
               setCurrentEmail('');
               setNewEmail('');
-              alert('Email updated successfully!');
             } else if (otpFlowType === 'password') {
+              setMessage('Password updated successfully!');
               setCurrentPassword('');
               setNewPassword('');
-              alert('Password updated successfully!');
             }
-            setOtpFlowType(null);  // Close the modal
+            setOtpFlowType(null);
           }}
         />
       )}
-
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import UpdateOtpFlowModal from '../modals/UpdateOtpFlowModal';
@@ -12,6 +12,13 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [showForgotFlow, setShowForgotFlow] = useState(false);
 
+  useEffect(() => {
+    console.log('[DEBUG] showForgotFlow state:', showForgotFlow);
+    if (showForgotFlow) {
+      console.log('[DEBUG] Rendering PopupFlowController');
+    }
+  }, [showForgotFlow]);
+
   const handleSignIn = async () => {
     setError('');
     try {
@@ -21,8 +28,8 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
       });
 
       if (response.status === 200) {
-        localStorage.setItem('email', email);
-        setShowOtpModal(true); // ✅ show OTP modal after password success
+        localStorage.setItem('loginEmail', email);
+        setShowOtpModal(true);
       }
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Sign-in failed. Please try again.';
@@ -32,7 +39,23 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
 
   const handleOtpVerified = () => {
     setShowOtpModal(false);
-    onClose(); // ✅ close after OTP verified
+    onClose();
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      window.postMessage({
+        type: "STORE_JWT_TOKEN",
+        token: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+      }, "*");
+      console.log("📨 Token posted to Chrome extension after OTP login");
+    } else {
+      console.warn("⚠️ No token found in localStorage after OTP verification");
+    }
+  };
+
+  const handleForgotClick = () => {
+    console.log('[DEBUG] Forgot password clicked, setting showForgotFlow to true');
+    setShowForgotFlow(true);
   };
 
   return (
@@ -63,7 +86,7 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
             </span>
           </div>
 
-          <div className="auth-forgot" onClick={() => setShowForgotFlow(true)}>
+          <div className="auth-forgot" onClick={handleForgotClick}>
             Forgot password?
           </div>
 
@@ -81,19 +104,23 @@ const SignInForm = ({ onClose }: { onClose: () => void }) => {
         </div>
       </div>
 
-      {/* OTP Modal after Sign In */}
       {showOtpModal && (
         <UpdateOtpFlowModal
-          type="login"   // ✅ purpose "login"
+          type="login"
           skipOtp={false}
           showThankYou={false}
           onComplete={handleOtpVerified}
         />
       )}
 
-      {/* Forgot Password flow */}
       {showForgotFlow && (
-        <PopupFlowController actionType="forgot" />
+        <PopupFlowController
+          actionType="forgot"
+          onClose={() => {
+            console.log('[DEBUG] Closing forgot password flow');
+            setShowForgotFlow(false);
+          }}
+        />
       )}
     </>
   );
